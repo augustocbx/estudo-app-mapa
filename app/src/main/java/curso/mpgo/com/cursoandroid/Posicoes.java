@@ -5,7 +5,7 @@ package curso.mpgo.com.cursoandroid;
  */
 public class Posicoes {
 
-    public java.util.List<Ponto> posicoes;
+    public java.util.List<Posicao> posicoes;
     public java.util.List<Circulo> circulos;
     public java.util.List<Poligono> poligonos;
 

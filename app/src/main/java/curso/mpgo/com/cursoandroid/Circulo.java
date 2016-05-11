@@ -10,10 +10,17 @@ public class Circulo extends Forma {
 
     private LatLng position;
 
+    public double id;
     public float latitude;
     public float longitude;
     public double raio;
     private CircleOptions circleOptions;
+
+    public Circulo(float latitude, float longitude, double raio){
+        this.latitude = latitude;
+        this.longitude = longitude;
+        circleOptions = new CircleOptions().center(getPosition()).radius(raio);
+    }
 
     @Override
     public LatLng getPosition() {

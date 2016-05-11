@@ -21,10 +21,14 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.clustering.ClusterManager;
 
+import java.util.List;
+
+import curso.mpgo.com.cursoandroid.database.CirculoDbHelper;
+import curso.mpgo.com.cursoandroid.database.PosicaoDbHelper;
+import curso.mpgo.com.cursoandroid.util.Conectividade;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -40,6 +44,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private ClusterManager mClusterManager;
 
+    private PosicaoDbHelper dbHelperPosicao;
+    private CirculoDbHelper dbHelperCirculo;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +58,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mLocationRequest.setInterval(10000);
         mLocationRequest.setFastestInterval(5000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        dbHelperPosicao = new PosicaoDbHelper(this);
+        dbHelperCirculo = new CirculoDbHelper(this);
     }
 
     @Override
@@ -85,38 +95,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         LatLng eu = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
         mMap.addMarker(new MarkerOptions().position(eu).title("Estou aqui"));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(eu, 10));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(eu, 12));
 
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
 
-        Call<Posicoes> call = ((CoreApplication) getApplication()).service.searchPositions();
-        call.enqueue(new Callback<Posicoes>() {
-            @Override
-            public void onResponse(Call<Posicoes> call, Response<Posicoes> response) {
-                mClusterManager = new ClusterManager<MyItem>(MapsActivity.this, mMap);
-                for (Ponto forma : response.body().posicoes) {
-                    System.out.println("Forma xxxxxxxxxxx");
-                    System.out.println(forma);
-                    System.out.println(forma.getPosition());
-                    mClusterManager.addItem(forma);
+        if (Conectividade.haveConnectivity(this)) {
+            Call<Posicoes> call = ((CoreApplication) getApplication()).service.searchPositions();
+            call.enqueue(new Callback<Posicoes>() {
+                @Override
+                public void onResponse(Call<Posicoes> call, Response<Posicoes> response) {
+                    mClusterManager = new ClusterManager<MyItem>(MapsActivity.this, mMap);
+                    dbHelperPosicao.clear();
+                    dbHelperCirculo.clear();
+                    mMap.setOnCameraChangeListener(mClusterManager);
+                    mMap.setOnMarkerClickListener(mClusterManager);
 
-                }
-                for (Circulo forma : response.body().circulos) {
-                    mMap.addCircle(forma.circleOptions());
+                    populaPosicoes(response.body().posicoes);
 
+                    for (Circulo forma : response.body().circulos) {
+                        mMap.addCircle(forma.circleOptions());
+                        dbHelperCirculo.create(forma);
+                    }
+                    for (Poligono poligono : response.body().poligonos) {
+                        mMap.addPolygon(poligono.getPolygonOptions());
+                    }
                 }
-                for (Poligono poligono : response.body().poligonos) {
-                    mMap.addPolygon(poligono.getPolygonOptions());
+
+                @Override
+                public void onFailure(Call<Posicoes> call, Throwable t) {
+                    Log.e("CURSO", "Pepino: " + t.getLocalizedMessage());
                 }
-                mMap.setOnCameraChangeListener(mClusterManager);
-                mMap.setOnMarkerClickListener(mClusterManager);
+            });
+        } else {
+            List<Posicao> posicoes = dbHelperPosicao.read();
+            List<Circulo> circulos = dbHelperCirculo.read();
+
+            populaPosicoes(posicoes);
+            for (Circulo circulo : circulos) {
+                dbHelperCirculo.create(circulo);
+                dbHelperCirculo.create(circulo);
             }
 
-            @Override
-            public void onFailure(Call<Posicoes> call, Throwable t) {
-                Log.e("CURSO", "Pepino: " + t.getLocalizedMessage());
-            }
-        });
+            mMap.setOnCameraChangeListener(mClusterManager);
+            mMap.setOnMarkerClickListener(mClusterManager);
+        }
 
 
         mMap.setOnCameraChangeListener(mClusterManager);
@@ -156,6 +178,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+    }
+
+    public void populaPosicoes(List<Posicao> posicoes){
+        populaPosicoes(posicoes, false);
+    }
+    public void populaPosicoes(List<Posicao> posicoes, boolean salvar){
+
+        for (Posicao posicao : posicoes) {
+            if (salvar)
+                dbHelperPosicao.create(posicao);
+
+            MyItem offsetItem = new MyItem(posicao.latitude, posicao.longitude);
+            mClusterManager.addItem(offsetItem);
+        }
     }
 
 }

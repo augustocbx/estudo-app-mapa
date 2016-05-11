@@ -3,7 +3,7 @@ package curso.mpgo.com.cursoandroid.database;
 /**
  * Created by augustocbx on 5/11/16.
  */
-public interface PontoContract {
+public interface PosicaoContract {
     String TABLE_NAME = "positionentry";
     String COLUMN_NAME_ENTRY_ID = "entryid";
     String COLUMN_NAME_NAME = "name";

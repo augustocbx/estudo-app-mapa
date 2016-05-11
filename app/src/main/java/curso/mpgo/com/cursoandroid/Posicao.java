@@ -5,13 +5,13 @@ import com.google.android.gms.maps.model.LatLng;
 /**
  * Created by ricardoogliari on 5/10/16.
  */
-public class Ponto extends Forma {
+public class Posicao extends Forma {
     public int id;
     public LatLng position;
     public double latitude;
     public double longitude;
 
-    public Ponto(double lat, double lng) {
+    public Posicao(double lat, double lng) {
         position = new LatLng(lat, lng);
     }
 
