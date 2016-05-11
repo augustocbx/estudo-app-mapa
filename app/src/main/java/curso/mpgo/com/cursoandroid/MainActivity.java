@@ -12,6 +12,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import curso.mpgo.com.cursoandroid.database.SharedManager;
+
 public class MainActivity extends AppCompatActivity {
 
         //CICLO DE VIDA
@@ -23,13 +25,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
 
-
-
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder (GoogleSignInOptions.DEFAULT_SIGN_IN)
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
 
@@ -45,6 +44,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        if (!SharedManager.getBoolean(this, SharedManager.KEY_LOGIN_GOOGLE)) {
+
+        } else {
+            proximaTela();
+        }
+
     }
 
     public void proximaTela(){
@@ -53,9 +58,6 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-
-
-    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -68,8 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private void handleSignInResult(GoogleSignInResult result) {
         if (result.isSuccess()) {
             GoogleSignInAccount acct = result.getSignInAccount();
-            Log.d("CURSO", "displayname: " + acct.getDisplayName());
-            Log.d("CURSO", "displayname: " + acct.getEmail());
+            SharedManager.saveBoolean(this, SharedManager.KEY_LOGIN_GOOGLE, true);
             proximaTela();
         } else {
             Log.d("CURSO", "sign out");

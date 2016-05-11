@@ -2,6 +2,7 @@ package curso.mpgo.com.cursoandroid;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
@@ -9,6 +10,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -47,10 +50,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private PosicaoDbHelper dbHelperPosicao;
     private CirculoDbHelper dbHelperCirculo;
 
+    private List<Posicao> posicoes;
+
+    private ImageView imgIconList;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        imgIconList = (ImageView) findViewById(R.id.imgIconList);
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
@@ -80,9 +90,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onLocationChanged(Location location) {
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.clear();
-        mMap.addMarker(new MarkerOptions().position(latLng).title("Estou aqui"));
-//        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
+//        mMap.clear();
+//        mMap.addMarker(new MarkerOptions().position(latLng).title("Estou aqui"));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16));
     }
 
     @Override
@@ -119,6 +129,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     for (Poligono poligono : response.body().poligonos) {
                         mMap.addPolygon(poligono.getPolygonOptions());
                     }
+                    imgIconList.setVisibility(View.VISIBLE);
                 }
 
                 @Override
@@ -185,13 +196,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     public void populaPosicoes(List<Posicao> posicoes, boolean salvar){
 
+        this.posicoes = posicoes;
         for (Posicao posicao : posicoes) {
-            if (salvar)
-                dbHelperPosicao.create(posicao);
-
             MyItem offsetItem = new MyItem(posicao.latitude, posicao.longitude);
             mClusterManager.addItem(offsetItem);
         }
+
+        mMap.setOnCameraChangeListener(mClusterManager);
+        mMap.setOnMarkerClickListener(mClusterManager);
+    }
+
+    public void mostraLista(View view){
+        ContainerPosicao containerPosicao = new ContainerPosicao();
+        containerPosicao.posicoes = posicoes;
+        System.out.println("posicoes");
+        System.out.println(posicoes);
+        System.out.println(posicoes.size());
+
+        Intent intent = new Intent(this, ListaLocais.class);
+        intent.putExtra("listaItens", containerPosicao);
+        startActivity(intent);
     }
 
 }
